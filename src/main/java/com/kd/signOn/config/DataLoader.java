@@ -47,21 +47,19 @@ public class DataLoader {
                 ValidationService.validateEmail(email);
                 ValidationService.validatePassword(password);
 
-                if (userRepository.count() == 0) {
+                User admin = new User();
+                admin.setEmail(email);
+                admin.setPasswordHash(passwordEncoder.encode(password));
+                admin.setRole(adminRole);
+                admin.setEnabled(true);
+                admin.setCreatedAt(LocalDateTime.now());
 
-                    User admin = new User();
-                    admin.setEmail(email);
-                    admin.setPasswordHash(passwordEncoder.encode(password));
-                    admin.setRole(adminRole);
-                    admin.setEnabled(true);
-                    admin.setCreatedAt(LocalDateTime.now());
+                // save without createdBy
+                admin = userRepository.save(admin);
 
-                    // save without createdBy
-                    admin = userRepository.save(admin);
-
-                    // self-reference
-                    admin.setCreatedBy(admin);
-                    userRepository.save(admin);
+                // self-reference
+                admin.setCreatedBy(admin);
+                userRepository.save(admin);
 
                 System.out.println("Admin user created successfully.");
             }
