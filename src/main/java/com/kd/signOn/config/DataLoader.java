@@ -40,16 +40,21 @@ public class DataLoader {
 
                 System.out.println("=== Initial Admin Setup ===");
 
+                System.out.print("Enter admin name: ");
+                String name = scanner.nextLine();
+
                 System.out.print("Enter admin email: ");
                 String email = scanner.nextLine();
 
                 System.out.print("Enter admin password: ");
                 String password = scanner.nextLine();
 
+                ValidationService.validateName(name);
                 ValidationService.validateEmail(email);
                 ValidationService.validatePassword(password);
 
                 User admin = new User();
+                admin.setName(name);
                 admin.setEmail(email);
                 admin.setPasswordHash(passwordEncoder.encode(password));
                 admin.setRole(adminRole);

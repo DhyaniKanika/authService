@@ -76,11 +76,6 @@ public class AuthController {
         return "landing"; // loads landing.html
     }
 
-    @GetMapping("/admin")
-    public String adminPage() {
-        return "admin";   // loads admin.html
-    }
-
     @GetMapping("/mfa")
     public String mfaPage() {
         return "mfa";     // loads mfa.html
@@ -101,4 +96,8 @@ public class AuthController {
         return "redirect:/login";
     }  // loads logout.html
     
+    @GetMapping("/access-denied")
+        public String accessDenied() {
+            return "accessDenied";
+    }
 }

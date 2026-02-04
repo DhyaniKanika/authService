@@ -27,4 +27,13 @@ public class ValidationService {
             throw new IllegalArgumentException("Password must be at least 8 characters and use only letters, numbers, and these symbols: ! @ # $ % ^ & * ( ) _ + = -");
         }
     }
+
+    public static void validateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        if (!name.matches("^[a-zA-Z '-]{2,50}$")) {
+            throw new RuntimeException("Invalid name");
+        }
+    }
 }

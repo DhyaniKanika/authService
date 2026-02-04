@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create User</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-container">
+    <h1>Create User</h1>
+
+    <form action="/admin/create-user" method="post">
+        <input type="text" name="name" placeholder="Name" required>
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+
+      <select name="role">
+        <option value="USER">USER</option>
+        <option value="ADMIN">ADMIN</option>
+      </select>
+
+      <button type="submit" class="login-button">Create</button>
+    </form>
+
+    <p style="color:red;">[[${error}]]</p>
+    <p style="color:green;">[[${success}]]</p>
+
+    <a href="/admin">Back</a>
+  </div>
+</div>
+</body>
+</html>

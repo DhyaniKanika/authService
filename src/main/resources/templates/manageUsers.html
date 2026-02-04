@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Users</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="login-page">
+    <div class="login-container">
+        <h1 class="logo-text">Manage Users</h1>
+
+        <table border="1" width="100%" style="margin-top:20px;">
+            <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+
+            <tr th:each="user : ${users}">
+                <td th:text="${user.email}"></td>
+                <td th:text="${user.role.name}"></td>
+
+                <!-- Status -->
+                <td th:text="${user.inactive ? 'INACTIVE' : (user.enabled ? 'ACTIVE' : 'DISABLED')}"></td>
+
+                <td>
+                    <!-- Disable button -->
+                    <form th:if="${user.enabled and !user.inactive}"
+                          th:action="@{/admin/disable-user}"
+                          method="post"
+                          style="display:inline;">
+                        <input type="hidden" name="userId" th:value="${user.id}">
+                        <button type="submit" class="login-button">Disable</button>
+                    </form>
+
+                    <!-- Enable button -->
+                    <form th:if="${!user.enabled and !user.inactive}"
+                          th:action="@{/admin/enable-user}"
+                          method="post"
+                          style="display:inline;">
+                        <input type="hidden" name="userId" th:value="${user.id}">
+                        <button type="submit" class="login-button">Enable</button>
+                    </form>
+
+                    <!-- Set Inactive (danger action) -->
+                    <form th:if="${!user.inactive}"
+                          th:action="@{/admin/inactivate-user}"
+                          method="post"
+                          style="display:inline;"
+                          onsubmit="return confirm('Are you sure? This will permanently deactivate the user. This action cannot be undone.');">
+                        <input type="hidden" name="userId" th:value="${user.id}">
+                        <button type="submit" class="login-button" style="background-color:#c0392b;">
+                            Set Inactive
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        </table>
+
+        <br><br>
+
+        <a href="/admin" class="login-button">Back to Admin</a>
+        <br><br>
+        <a href="/logout" class="login-button">Logout</a>
+
+    </div>
+</div>
+
+</body>
+</html>
