@@ -87,7 +87,18 @@ public class AuthController {
     }
 
     @GetMapping("/logout")
-    public String logoutPage() {
-        return "logout";  // loads logout.html
-    }
+    public String logout(HttpServletRequest request) {
+
+        // Invalidate HTTP session
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        // Clear Spring Security context
+        SecurityContextHolder.clearContext();
+
+        return "redirect:/login";
+    }  // loads logout.html
+    
 }
