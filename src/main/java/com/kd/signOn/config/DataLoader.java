@@ -2,8 +2,10 @@ package com.kd.signOn.config;
 
 import com.kd.signOn.model.Role;
 import com.kd.signOn.model.User;
+import com.kd.signOn.model.UserStatusHistory;
 import com.kd.signOn.repository.RoleRepository;
 import com.kd.signOn.repository.UserRepository;
+import com.kd.signOn.repository.UserStatusHistoryRepository;
 import com.kd.signOn.service.ValidationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -19,11 +21,12 @@ public class DataLoader {
     @Bean
     CommandLineRunner initDatabase(RoleRepository roleRepository,
                                    UserRepository userRepository,
+                                   UserStatusHistoryRepository historyRepository,
                                    PasswordEncoder passwordEncoder) {
 
         return args -> {
 
-            // Create roles if not exist
+            // Create roles
             Role adminRole = roleRepository.findByName("ADMIN")
                     .orElseGet(() -> roleRepository.save(new Role("ADMIN")));
 
@@ -43,7 +46,6 @@ public class DataLoader {
                 System.out.print("Enter admin password: ");
                 String password = scanner.nextLine();
 
-                // Validate input (whitelist rules)
                 ValidationService.validateEmail(email);
                 ValidationService.validatePassword(password);
 
@@ -52,14 +54,24 @@ public class DataLoader {
                 admin.setPasswordHash(passwordEncoder.encode(password));
                 admin.setRole(adminRole);
                 admin.setEnabled(true);
+                admin.setInactive(false);
                 admin.setCreatedAt(LocalDateTime.now());
 
-                // save without createdBy
+                // save first (no createdBy yet)
                 admin = userRepository.save(admin);
 
-                // self-reference
+                // self-reference createdBy
                 admin.setCreatedBy(admin);
-                userRepository.save(admin);
+                admin = userRepository.save(admin);
+
+                // write audit history
+                UserStatusHistory history = new UserStatusHistory(
+                        admin,
+                        admin,
+                        "ENABLED"
+                );
+
+                historyRepository.save(history);
 
                 System.out.println("Admin user created successfully.");
             }

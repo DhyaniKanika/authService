@@ -27,7 +27,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        if (!user.isEnabled()) {
+        if (!user.isEnabled() || user.isInactive()) {
             throw new RuntimeException("Invalid credentials");
         }
 
