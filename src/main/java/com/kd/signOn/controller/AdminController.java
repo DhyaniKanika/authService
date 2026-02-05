@@ -59,6 +59,10 @@ public class AdminController {
             ValidationService.validateEmail(email);
             ValidationService.validatePassword(password);
 
+            if ("ADMIN".equalsIgnoreCase(role)) {
+                throw new RuntimeException("Invalid role");
+            }
+
             if (userRepository.findByEmail(email).isPresent()) {
                 throw new RuntimeException("User already exists");
             }
@@ -97,7 +101,7 @@ public class AdminController {
     // Manage users page
     @GetMapping("/manage-users")
     public String manageUsers(Model model) {
-        model.addAttribute("users", userRepository.findAll());
+        model.addAttribute("users", userRepository.findByRole_NameNot("ADMIN"));
         return "manageUsers";
     }
 
