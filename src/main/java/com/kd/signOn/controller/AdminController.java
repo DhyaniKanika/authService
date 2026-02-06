@@ -9,16 +9,22 @@ import com.kd.signOn.repository.UserStatusHistoryRepository;
 import com.kd.signOn.service.ValidationService;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
+
+    private static final Logger SECURITY_LOG =
+        LoggerFactory.getLogger("SECURITY_AUDIT");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -55,10 +61,16 @@ public class AdminController {
                              Authentication authentication,
                              Model model) {
 
+        // Check if user has admin role
+        if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            return "redirect:/access-denied";
+        }
+
         try {
             ValidationService.validateEmail(email);
             ValidationService.validatePassword(password);
 
+            // Role validation
             if ("ADMIN".equalsIgnoreCase(role)) {
                 throw new RuntimeException("Invalid role");
             }
@@ -70,8 +82,9 @@ public class AdminController {
             Role userRole = roleRepository.findByName(role)
                     .orElseThrow(() -> new RuntimeException("Invalid role"));
 
-            User admin = userRepository.findByEmail(authentication.getName())
-                    .orElseThrow();
+            Long adminId = Long.valueOf(authentication.getName());
+            User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
             User user = new User();
             user.setName(name);
@@ -85,6 +98,8 @@ public class AdminController {
 
             userRepository.save(user);
 
+            SECURITY_LOG.info("User {} created by {}", user.getId(), admin.getId());
+
             historyRepository.save(
                 new UserStatusHistory(user, admin, "ENABLED")
             );
@@ -92,6 +107,7 @@ public class AdminController {
             model.addAttribute("success", "User created successfully");
 
         } catch (Exception e) {
+            e.printStackTrace();
             model.addAttribute("error", e.getMessage());
         }
 
@@ -110,14 +126,22 @@ public class AdminController {
     public String disableUser(@RequestParam Long userId,
                               Authentication authentication) {
 
-        User admin = userRepository.findByEmail(authentication.getName())
-                .orElseThrow();
+        // Check if user has admin role
+        if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            return "redirect:/access-denied";
+        }
+
+        Long adminId = Long.valueOf(authentication.getName());
+            User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         user.setEnabled(false);
         userRepository.save(user);
+
+        SECURITY_LOG.warn("User {} disabled by {}", user.getId(), admin.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "DISABLED")
@@ -132,11 +156,17 @@ public class AdminController {
                              Authentication authentication,
                              Model model) {
 
-        User admin = userRepository.findByEmail(authentication.getName())
-                .orElseThrow();
+        // Check if user has admin role
+        if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            return "redirect:/access-denied";
+        }
+
+       Long adminId = Long.valueOf(authentication.getName());
+            User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         if (user.isInactive()) {
             model.addAttribute("error", "User is permanently inactive and cannot be re-enabled");
@@ -145,6 +175,8 @@ public class AdminController {
 
         user.setEnabled(true);
         userRepository.save(user);
+
+        SECURITY_LOG.warn("User {} enabled by {}", user.getId(), admin.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "ENABLED")
@@ -156,15 +188,24 @@ public class AdminController {
     public String inactivateUser(@RequestParam Long userId,
                                 Authentication authentication) {
 
-        User admin = userRepository.findByEmail(authentication.getName())
-                .orElseThrow();
+        // Check if user has admin role
+        if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            return "redirect:/access-denied";
+        }
+
+       Long adminId = Long.valueOf(authentication.getName());
+            User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+
 
         User user = userRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         user.setEnabled(false);
         user.setInactive(true);
         userRepository.save(user);
+
+        SECURITY_LOG.warn("User {} inactivated by {}", user.getId(), admin.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "INACTIVATED")
