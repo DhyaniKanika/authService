@@ -43,6 +43,7 @@ public class AuthService {
         }
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            rateLimiter.recordFailure(clientIp);
             throw new RuntimeException("Invalid credentials");
         }
 
