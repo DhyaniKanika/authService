@@ -40,7 +40,8 @@ public class AuthController {
                         Model model) {
 
         try {
-            User user = authService.authenticate(email, password);
+            String ip = request.getRemoteAddr();
+            User user = authService.authenticate(email, password, ip);
 
             // Create authentication token
             UsernamePasswordAuthenticationToken authToken =
@@ -58,6 +59,10 @@ public class AuthController {
             HttpSession session = request.getSession(true);
             session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
 
+            if (user.isPasswordChangeRequired()) {
+                return "redirect:/change-password";
+            }
+
             if (user.getRole().getName().equals("ADMIN")) {
                 return "redirect:/admin";
             } else {
@@ -74,11 +79,6 @@ public class AuthController {
     @GetMapping("/landing")
     public String landingPage() {
         return "landing"; // loads landing.html
-    }
-
-    @GetMapping("/mfa")
-    public String mfaPage() {
-        return "mfa";     // loads mfa.html
     }
 
     @GetMapping("/logout")
@@ -100,4 +100,32 @@ public class AuthController {
         public String accessDenied() {
             return "accessDenied";
     }
+
+    @GetMapping("/change-password")
+        public String changePasswordPage() {
+            return "changePassword";
+    }
+    @PostMapping("/change-password")
+        public String changePassword(@RequestParam String password,
+                                    HttpServletRequest request,
+                                    Model model) {
+
+            try {
+                authService.changePassword(password);
+
+                // IMPORTANT: force logout to refresh security context
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    session.invalidate();
+                }
+                SecurityContextHolder.clearContext();
+
+                return "redirect:/login?passwordChanged";
+
+            } catch (RuntimeException ex) {
+                model.addAttribute("error", ex.getMessage());
+                return "change-password";
+            }
+        }
+
 }

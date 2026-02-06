@@ -35,9 +35,9 @@ public class DataLoader {
 
             // Only bootstrap if no users exist
             if (userRepository.count() == 0) {
-
                 Scanner scanner = new Scanner(System.in);
 
+            try {
                 System.out.println("=== Initial Admin Setup ===");
 
                 System.out.print("Enter admin name: ");
@@ -48,6 +48,13 @@ public class DataLoader {
 
                 System.out.print("Enter admin password: ");
                 String password = scanner.nextLine();
+
+                System.out.print("Confirm admin password: ");
+                String confirm = scanner.nextLine();
+
+                if (!password.equals(confirm)) {
+                    throw new IllegalStateException("Passwords do not match");
+                }
 
                 ValidationService.validateName(name);
                 ValidationService.validateEmail(email);
@@ -60,9 +67,10 @@ public class DataLoader {
                 admin.setRole(adminRole);
                 admin.setEnabled(true);
                 admin.setInactive(false);
+                admin.setPasswordChangeRequired(false);
                 admin.setCreatedAt(LocalDateTime.now());
 
-                // save first (no createdBy yet)
+                // Save first to get ID
                 admin = userRepository.save(admin);
 
                 // self-reference createdBy
@@ -75,11 +83,19 @@ public class DataLoader {
                         admin,
                         "ENABLED"
                 );
-
                 historyRepository.save(history);
 
                 System.out.println("Admin user created successfully.");
+
+            } finally {
+                scanner.close();
             }
+            } else {
+                return;
+            }
+               
+
+            
         };
     }
 }
