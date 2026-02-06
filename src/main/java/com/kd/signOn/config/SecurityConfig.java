@@ -29,7 +29,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     http
         .authorizeHttpRequests(auth -> auth
             // Public endpoints (intranet)
-            .requestMatchers("/login", "/logout", "/css/**", "/styles.css").permitAll()
+            .requestMatchers("/login", "/logout", "/logout-success", "/css/**", "/styles.css").permitAll()
 
             // Role-based access
             .requestMatchers("/admin/**", "/h2-console/**").hasRole("ADMIN")
@@ -60,9 +60,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         // session cleanup is a must at logout
         .logout(logout -> logout
             .logoutUrl("/logout")
+            .logoutSuccessUrl("/logout-success")
             .invalidateHttpSession(true)
             .deleteCookies("JSESSIONID")
-            .logoutSuccessUrl("/login?logout")
         )
         // CSRF protection
         .csrf(csrf -> csrf

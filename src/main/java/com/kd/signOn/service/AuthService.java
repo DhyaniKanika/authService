@@ -54,11 +54,11 @@ public class AuthService {
 
         ValidationService.validatePassword(newPassword);
 
-        String email = SecurityContextHolder.getContext()
+        Long userId = (Long) SecurityContextHolder.getContext()
                 .getAuthentication()
-                .getName();
+                .getPrincipal();
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
