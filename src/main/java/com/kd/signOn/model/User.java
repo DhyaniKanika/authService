@@ -11,15 +11,25 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // user's name
     @Column(nullable = false)
     private String name;
 
+    // user's email - unique
     @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
     private String passwordHash;
 
+    // does the user need to reset their password?
+    @Column(nullable = false)
+    private boolean passwordChangeRequired = true;
+
+    // timestamp of last password change
+    private LocalDateTime passwordChangedAt;
+
+    // user's role
     @ManyToOne(optional = false)
     @JoinColumn(name = "role_id")
     private Role role;
@@ -32,13 +42,14 @@ public class User {
     @Column(nullable = false)
     private boolean inactive = false;
 
+    // timestamp of user creation
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     // who created this user
     @ManyToOne
     @JoinColumn(name = "created_by")
-    private User createdBy;
+    private User createdBy; 
 
     public User() {}
 
@@ -69,4 +80,17 @@ public class User {
 
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+
+    public boolean isPasswordChangeRequired() { return passwordChangeRequired; }
+
+    public void setPasswordChangeRequired(boolean passwordChangeRequired) {
+        this.passwordChangeRequired = passwordChangeRequired;
+    }
+    
+    public LocalDateTime getPasswordChangedAt() { return passwordChangedAt; }
+
+    public void setPasswordChangedAt(LocalDateTime passwordChangedAt) {
+        this.passwordChangedAt = passwordChangedAt;
+    }
+
 }

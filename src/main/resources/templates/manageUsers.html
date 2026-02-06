@@ -33,6 +33,7 @@
                           method="post"
                           style="display:inline;">
                         <input type="hidden" name="userId" th:value="${user.id}">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <button type="submit" class="login-button">Disable</button>
                     </form>
 
@@ -42,6 +43,7 @@
                           method="post"
                           style="display:inline;">
                         <input type="hidden" name="userId" th:value="${user.id}">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <button type="submit" class="login-button">Enable</button>
                     </form>
 
@@ -52,6 +54,7 @@
                           style="display:inline;"
                           onsubmit="return confirm('Are you sure? This will permanently deactivate the user. This action cannot be undone.');">
                         <input type="hidden" name="userId" th:value="${user.id}">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <button type="submit" class="login-button" style="background-color:#c0392b;">
                             Set Inactive
                         </button>
