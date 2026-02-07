@@ -14,9 +14,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Scanner;
+import java.io.Console;
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 public class DataLoader {
+    Logger SECURITY_LOG = LoggerFactory.getLogger("SECURITY_AUDIT");
 
     @Bean
     CommandLineRunner initDatabase(RoleRepository roleRepository,
@@ -35,26 +40,51 @@ public class DataLoader {
 
             // Only bootstrap if no users exist
             if (userRepository.count() == 0) {
+
                 Scanner scanner = new Scanner(System.in);
+                Console console = System.console();
 
-            try {
-                System.out.println("=== Initial Admin Setup ===");
+                try {
+                    System.out.println("=== Initial Admin Setup ===");
 
-                System.out.print("Enter admin name: ");
-                String name = scanner.nextLine();
+                    System.out.print("Enter admin name: ");
+                    String name = scanner.nextLine();
 
-                System.out.print("Enter admin email: ");
-                String email = scanner.nextLine();
+                    System.out.print("Enter admin email: ");
+                    String email = scanner.nextLine();
 
-                System.out.print("Enter admin password: ");
-                String password = scanner.nextLine();
+                    String password;
 
-                System.out.print("Confirm admin password: ");
-                String confirm = scanner.nextLine();
+                    while (true) {
 
-                if (!password.equals(confirm)) {
-                    throw new IllegalStateException("Passwords do not match");
-                }
+                        char[] passwordChars;
+                        char[] confirmChars;
+
+                        if (console != null) {
+                            passwordChars = console.readPassword("Enter admin password: ");
+                            confirmChars = console.readPassword("Confirm admin password: ");
+                        } else {
+                            System.out.println("WARNING: Console unavailable, password will be visible.");
+                            System.out.print("Enter admin password: ");
+                            passwordChars = scanner.nextLine().toCharArray();
+                            System.out.print("Confirm admin password: ");
+                            confirmChars = scanner.nextLine().toCharArray();
+                        }
+
+                        String pwd = new String(passwordChars);
+                        String confirm = new String(confirmChars);
+
+                        // wipe arrays
+                        Arrays.fill(passwordChars, '\0');
+                        Arrays.fill(confirmChars, '\0');
+
+                        if (pwd.equals(confirm)) {
+                            password = pwd;
+                            break;
+                        } else {
+                            System.out.println("Passwords do not match. Try again.");
+                        }
+                    }
 
                 ValidationService.validateName(name);
                 ValidationService.validateEmail(email);
@@ -85,7 +115,7 @@ public class DataLoader {
                 );
                 historyRepository.save(history);
 
-                System.out.println("Admin user created successfully.");
+                SECURITY_LOG.info("Initial admin user {} created with email {}", admin.getId(), admin.getEmail());
 
             } finally {
                 scanner.close();
