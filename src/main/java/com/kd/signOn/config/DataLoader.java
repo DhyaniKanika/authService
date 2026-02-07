@@ -47,11 +47,8 @@ public class DataLoader {
                 try {
                     System.out.println("=== Initial Admin Setup ===");
 
-                    System.out.print("Enter admin name: ");
-                    String name = scanner.nextLine();
-
-                    System.out.print("Enter admin email: ");
-                    String email = scanner.nextLine();
+                    String name = "admin";
+                    String email = "admin@kd.com";
 
                     String password;
 
@@ -116,6 +113,24 @@ public class DataLoader {
                 historyRepository.save(history);
 
                 SECURITY_LOG.info("Initial admin user {} created with email {}", admin.getId(), admin.getEmail());
+                System.out.println();
+                System.out.println("========================================");
+                System.out.println(" SignOn installation completed");
+                System.out.println("========================================");
+                System.out.println();
+                System.out.println("Admin account created.");
+                System.out.println();
+                System.out.println("Login URL:");
+                System.out.println("https://localhost:8443/login");
+                System.out.println();
+                System.out.println(" Admin Username:");
+                System.out.println(email);
+                System.out.println();
+                System.out.println("Use the password you entered during setup.");
+                System.out.println();
+                System.out.println("========================================");
+                System.out.println();
+
 
             } finally {
                 scanner.close();

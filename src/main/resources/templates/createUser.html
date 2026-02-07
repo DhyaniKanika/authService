@@ -4,22 +4,71 @@
     <title>Create User</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
+<script>
+document.getElementById("createUserForm").addEventListener("submit", function(e) {
+
+    let email = document.getElementById("email").value;
+    let password = document.getElementById("password").value;
+    let confirm = document.getElementById("confirmPassword").value;
+
+    let emailError = document.getElementById("emailError");
+    let passwordError = document.getElementById("passwordError");
+
+    emailError.textContent = "";
+    passwordError.textContent = "";
+
+    // company email enforcement
+    if (!email.endsWith("@kd.com")) {
+        emailError.textContent = "Email must be a company email (@kd.com)";
+        e.preventDefault();
+        return;
+    }
+
+    // password strength
+    let strong =
+        password.length >= 8 &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password);
+
+    if (!strong) {
+        passwordError.textContent = "Password must be 8+ chars with upper, lower, number & symbol.";
+        e.preventDefault();
+        return;
+    }
+
+    // confirm password
+    if (password !== confirm) {
+        passwordError.textContent = "Passwords do not match.";
+        e.preventDefault();
+    }
+});
+</script>
 <body>
 <div class="login-page">
   <div class="login-container">
     <h1>Create User</h1>
 
-    <form action="/admin/create-user" method="post">
+    <form action="/admin/create-user" method="post" id="createUserForm">
         <input type="text" name="name" placeholder="Name" required>
-      <input type="email" name="email" placeholder="Email" required>
-      <input type="password" name="password" placeholder="Password" required>
 
-      <select name="role">
-        <option value="USER">USER</option>
-      </select>
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <button type="submit" class="login-button">Create</button>
+        <input type="email" name="email" id="email" placeholder="Email" required>
+        <small id="emailError" style="color:red;"></small>
+
+        <input type="password" name="password" id="password" placeholder="Password" required>
+        
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+        <small id="passwordError" style="color:red;"></small>
+
+        <select name="role">
+            <option value="USER">USER</option>
+        </select>
+
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit" class="login-button">Create</button>
     </form>
+
 
     <p style="color:red;">[[${error}]]</p>
     <p style="color:green;">[[${success}]]</p>

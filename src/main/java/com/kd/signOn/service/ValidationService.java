@@ -3,7 +3,7 @@ package com.kd.signOn.service;
 public class ValidationService {
 
     // allow only safe characters for email
-    private static final String EMAIL_REGEX = "^[A-Za-z0-9@._+-]+$";
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@kd\\.com$";
 
     // allow strong but safe passwords
     private static final String PASSWORD_REGEX = "^[A-Za-z0-9!@#$%^&*()_+=-]{8,64}$";
