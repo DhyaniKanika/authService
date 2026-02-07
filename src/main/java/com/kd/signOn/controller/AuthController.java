@@ -82,7 +82,7 @@ public class AuthController {
             }
 
         } catch (RuntimeException ex) {
-            SECURITY_LOG.warn("Failed login attempt with user email {} from IP {}", email, request.getRemoteAddr());
+            SECURITY_LOG.warn("Failed login attempt for user {}: {}", email, ex.getMessage());
             model.addAttribute("error", "Invalid credentials");
             return "login";
         }

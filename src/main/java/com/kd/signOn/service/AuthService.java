@@ -8,11 +8,15 @@ import java.time.LocalDateTime;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Optional;
 
 
 @Service
 public class AuthService {
+    private static final Logger SECURITY_LOG =
+        LoggerFactory.getLogger("SECURITY_AUDIT");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,22 +36,36 @@ public class AuthService {
 
         //rate limiting
         if (rateLimiter.isBlocked(clientIp)) {
+            SECURITY_LOG.warn("Login failed for email={} ip={} reason=ip_rate_limiting",
+                    email, clientIp);
             throw new RuntimeException("Invalid credentials");
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isEmpty()) {
+            SECURITY_LOG.warn("Login failed for email={} ip={} reason=user_not_found",
+                    email, clientIp);
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        User user = optionalUser.get();
+
 
         if (!user.isEnabled() || user.isInactive()) {
+            SECURITY_LOG.warn("Login failed for user={} ip={} reason=user_disabled",
+                    user.getId(), clientIp);
             throw new RuntimeException("Invalid credentials");
         }
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            rateLimiter.recordFailure(clientIp);
+            SECURITY_LOG.warn("Login failed for user={} ip={} reason=invalid_password",
+                    user.getId(), clientIp);
+            rateLimiter.recordAttempt(clientIp);
             throw new RuntimeException("Invalid credentials");
         }
 
-        rateLimiter.recordSuccess(clientIp);
+        rateLimiter.recordAttempt(clientIp);
         return user;
     }
     public void changePassword(String newPassword) {
