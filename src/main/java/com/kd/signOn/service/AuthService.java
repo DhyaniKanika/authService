@@ -101,20 +101,34 @@ public class AuthService {
 }
 
     /**
+     * Get the currently authenticated user
+     */
+    public User getCurrentUser() {
+        Long id = Long.valueOf(
+                SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getName()
+        );
+        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    /**
      * Change a user's password
      */
     public void changePassword(String newPassword) {
 
         ValidationService.validatePassword(newPassword);
 
-        Long userId = (Long) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal();
+        User user = getCurrentUser();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("New password cannot be the same as the previous password");
+        }
+        ValidationService.validatePassword(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+
+        newPassword = null; // Clear plaintext password from memory
+
         user.setPasswordChangeRequired(false);
         user.setPasswordChangedAt(LocalDateTime.now());
 

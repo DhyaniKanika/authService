@@ -90,17 +90,13 @@ if (password !== confirm) {
 }
 
 // only check strength if they match
-let strong =
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    /[^A-Za-z0-9]/.test(password);
+const regex = /^[A-Za-z0-9!@#$%^&*()_+=-]{8,64}$/;
 
-if (!strong) {
-    passwordError.textContent =
-        "Password must be 8+ chars with upper, lower, number & symbol.";
+if (!regex.test(newPass)) {
+    err.textContent =
+        "Password must be 8–64 characters and may include letters, numbers and !@#$%^&*()_+=-";
     e.preventDefault();
+    return;
 }
 });
 </script>

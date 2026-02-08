@@ -94,6 +94,17 @@ public class AuthController {
         return "landing"; // loads landing.html
     }
 
+    @GetMapping("/account")
+    public String accountPage( Model model) {
+        User user = authService.getCurrentUser();
+
+        model.addAttribute("name", user.getName());
+        model.addAttribute("email", user.getEmail());
+        model.addAttribute("role", user.getRole().getName());
+
+        return "account"; // loads account.html
+    }
+
     @GetMapping("/logout")
     public String logout(HttpServletRequest request) {
 
@@ -129,29 +140,45 @@ public class AuthController {
     }
 
     // Change Password action
-    @PostMapping("/change-password")
+   @PostMapping("/change-password")
         public String changePassword(@RequestParam String password,
                                     HttpServletRequest request,
                                     Model model) {
 
-            SECURITY_LOG.info("User with id {} is changing password", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+            Long userId = Long.valueOf(
+                    SecurityContextHolder.getContext()
+                            .getAuthentication()
+                            .getName()
+            );
+
             try {
                 authService.changePassword(password);
 
-                // IMPORTANT: force logout to refresh security context
+                SECURITY_LOG.warn("Password successfully changed for userId={}", userId);
+
+                // force re-login
                 HttpSession session = request.getSession(false);
                 if (session != null) {
                     session.invalidate();
                 }
                 SecurityContextHolder.clearContext();
 
-                SECURITY_LOG.info("User with id {} successfully changed password", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
                 return "redirect:/login?passwordChanged";
-            } catch (RuntimeException ex) {
-                SECURITY_LOG.warn("Failed password change attempt for user with id {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+
+            } catch (IllegalArgumentException ex) {
+                // business rule violation (like reuse)
+                SECURITY_LOG.warn("Password change rejected for userId={} reason={}", userId, ex.getMessage());
+
+                model.addAttribute("error", ex.getMessage());
+                return "changePassword";
+
+            } catch (Exception ex) {
+                SECURITY_LOG.error("Password change failed unexpectedly for userId={}", userId);
+
                 model.addAttribute("error", "Failed to change password");
-                return "change-password";
+                return "changePassword";
             }
         }
 
 }
+

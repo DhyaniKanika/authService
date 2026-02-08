@@ -259,3 +259,42 @@ body {
 .subtle {
     background: #7f8c8d;
 }
+
+/* =========================================
+   Vertical form alignment
+========================================= */
+
+.form-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    box-sizing: border-box;
+}
+/* simple field alignment */
+.field {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    margin-bottom: 12px;
+}
+
+.field input {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+}

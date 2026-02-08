@@ -8,6 +8,7 @@ import com.kd.signOn.repository.UserRepository;
 import com.kd.signOn.repository.UserStatusHistoryRepository;
 import com.kd.signOn.service.ValidationService;
 import com.kd.signOn.service.LoginRateLimiter;
+import com.kd.signOn.service.AuthService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,17 +33,20 @@ public class AdminController {
     private final UserStatusHistoryRepository historyRepository;
     private final PasswordEncoder passwordEncoder;
     private final LoginRateLimiter rateLimiter;
+    private final AuthService authService;
 
     public AdminController(UserRepository userRepository,
                            RoleRepository roleRepository,
                            UserStatusHistoryRepository historyRepository,
                            PasswordEncoder passwordEncoder,
-                           LoginRateLimiter rateLimiter) {
+                           LoginRateLimiter rateLimiter,
+                           AuthService authService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.historyRepository = historyRepository;
         this.passwordEncoder = passwordEncoder;
         this.rateLimiter = rateLimiter;
+        this.authService = authService;
     }
 
     // ============================================================
@@ -91,9 +95,7 @@ public class AdminController {
             Role userRole = roleRepository.findByName(role)
                     .orElseThrow(() -> new RuntimeException("Invalid role"));
 
-            Long adminId = Long.valueOf(authentication.getName());
-            User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+            User admin = authService.getCurrentUser();
 
             User user = new User();
             user.setName(name);
@@ -148,9 +150,7 @@ public class AdminController {
             return "redirect:/access-denied";
         }
 
-        Long adminId = Long.valueOf(authentication.getName());
-        User admin = userRepository.findById(adminId)
-            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        User admin = authService.getCurrentUser();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -181,9 +181,7 @@ public class AdminController {
             return "redirect:/access-denied";
         }
 
-        Long adminId = Long.valueOf(authentication.getName());
-        User admin = userRepository.findById(adminId)
-            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        User admin = authService.getCurrentUser();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -221,9 +219,7 @@ public class AdminController {
             return "redirect:/access-denied";
         }
 
-        Long adminId = Long.valueOf(authentication.getName());
-        User admin = userRepository.findById(adminId)
-            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        User admin = authService.getCurrentUser();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
