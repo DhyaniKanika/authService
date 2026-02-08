@@ -64,6 +64,7 @@ public class AuthController {
             securityContext.setAuthentication(authToken);
 
             // Store in session
+            request.changeSessionId();
             HttpSession session = request.getSession(true);
             session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
 
@@ -105,21 +106,6 @@ public class AuthController {
         return "account"; // loads account.html
     }
 
-    @GetMapping("/logout")
-    public String logout(HttpServletRequest request) {
-
-        SECURITY_LOG.info("User with id {} logged out from IP {}", SecurityContextHolder.getContext().getAuthentication().getPrincipal(), request.getRemoteAddr());
-        // Invalidate HTTP session
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-
-        // Clear Spring Security context
-        SecurityContextHolder.clearContext();
-
-        return "redirect:/logout-success";
-    }
 
     // Access Denied page
     @GetMapping("/access-denied")

@@ -61,45 +61,9 @@
     <a href="/admin" class="link-secondary">Back</a>
   </div>
 </div>
-
-<!-- DOM SAFE SCRIPT -->
-<script>
-document.getElementById("createUserForm").addEventListener("submit", function(e) {
-
-    let email = document.getElementById("email").value;
-    let password = document.getElementById("password").value;
-    let confirm = document.getElementById("confirmPassword").value;
-
-    let emailError = document.getElementById("emailError");
-    let passwordError = document.getElementById("passwordError");
-
-    emailError.textContent = "";
-    passwordError.textContent = "";
-
-    if (!email.endsWith("@kd.com")) {
-        emailError.textContent = "Email must be a company email (@kd.com)";
-        e.preventDefault();
-        return;
-    }
-
-    // confirm password FIRST
-if (password !== confirm) {
-    passwordError.textContent = "Passwords do not match.";
-    e.preventDefault();
-    return;
-}
-
-// only check strength if they match
-const regex = /^[A-Za-z0-9!@#$%^&*()_+=-]{8,64}$/;
-
-if (!regex.test(newPass)) {
-    err.textContent =
-        "Password must be 8–64 characters and may include letters, numbers and !@#$%^&*()_+=-";
-    e.preventDefault();
-    return;
-}
-});
-</script>
+<script src="/js/validation.js"></script>
+<script src="/js/forms.js"></script>
+<script src="/js/create-user.js"></script>
 
 </body>
 </html>

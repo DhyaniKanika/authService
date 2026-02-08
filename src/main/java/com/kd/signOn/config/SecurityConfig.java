@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.kd.signOn.repository.UserRepository;
 
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -70,6 +71,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         )
         //
         .headers(headers -> headers
+            .contentSecurityPolicy(csp -> csp
+                .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; frame-ancestors 'self';")
+            )
             .frameOptions(frame -> frame.sameOrigin() // for H2 console (dev only)
             .httpStrictTransportSecurity(hsts -> hsts
             .includeSubDomains(true)

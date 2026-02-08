@@ -62,33 +62,9 @@
 </div>
 
 <!-- ================= Client Validation ================= -->
-<script>
-document.getElementById("changePasswordForm")
-.addEventListener("submit", function(e) {
-
-    const newPass = document.getElementById("newPassword").value;
-    const confirm = document.getElementById("confirmPassword").value;
-    const err = document.getElementById("passwordError");
-
-    err.textContent = "";
-
-    if (newPass !== confirm) {
-        err.textContent = "Passwords do not match.";
-        e.preventDefault();
-        return;
-    }
-
-    const regex = /^[A-Za-z0-9!@#$%^&*()_+=-]{8,64}$/;
-
-if (!regex.test(newPass)) {
-    err.textContent =
-        "Password must be 8–64 characters and may include letters, numbers and !@#$%^&*()_+=-";
-    e.preventDefault();
-    return;
-}
-});
-</script>
-
+<script src="/js/validation.js"></script>
+<script src="/js/forms.js"></script>
+<script src="/js/account.js"></script>
 
 </body>
 </html>

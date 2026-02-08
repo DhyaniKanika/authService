@@ -78,7 +78,11 @@
 
         <div class="page-actions">
             <a href="/admin" class="login-button">Back to Admin</a>
-            <a href="/logout" class="login-button subtle">Logout</a>
+            <form action="/logout" method="post" >
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="login-button subtle">Logout</button>
+            </form>
+
         </div>
 
     </div>
