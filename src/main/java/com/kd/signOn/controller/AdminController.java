@@ -7,6 +7,7 @@ import com.kd.signOn.repository.RoleRepository;
 import com.kd.signOn.repository.UserRepository;
 import com.kd.signOn.repository.UserStatusHistoryRepository;
 import com.kd.signOn.service.ValidationService;
+import com.kd.signOn.service.LoginRateLimiter;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,39 +31,48 @@ public class AdminController {
     private final RoleRepository roleRepository;
     private final UserStatusHistoryRepository historyRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LoginRateLimiter rateLimiter;
 
     public AdminController(UserRepository userRepository,
                            RoleRepository roleRepository,
                            UserStatusHistoryRepository historyRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           LoginRateLimiter rateLimiter) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.historyRepository = historyRepository;
         this.passwordEncoder = passwordEncoder;
+        this.rateLimiter = rateLimiter;
     }
 
+    // ============================================================
     // Admin landing page
+    // ============================================================
+
     @GetMapping
     public String adminHome() {
         return "admin";
     }
 
-    // Show create user page
+    // ============================================================
+    // Create User
+    // ============================================================
+
     @GetMapping("/create-user")
     public String createUserPage() {
         return "createUser";
     }
 
-    // Handle create user
     @PostMapping("/create-user")
-    public String createUser(@RequestParam String name,@RequestParam String email,
+    public String createUser(@RequestParam String name,
+                             @RequestParam String email,
                              @RequestParam String password,
                              @RequestParam String role,
                              Authentication authentication,
                              Model model) {
-
         // Check if user has admin role
         if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            SECURITY_LOG.warn("Unauthorized create-user attempt by {}", authentication.getName());
             return "redirect:/access-denied";
         }
 
@@ -70,7 +80,6 @@ public class AdminController {
             ValidationService.validateEmail(email);
             ValidationService.validatePassword(password);
 
-            // Role validation
             if ("ADMIN".equalsIgnoreCase(role)) {
                 throw new RuntimeException("Invalid role");
             }
@@ -98,7 +107,7 @@ public class AdminController {
 
             userRepository.save(user);
 
-            SECURITY_LOG.info("User {} created by {}", user.getId(), admin.getId());
+            SECURITY_LOG.info("Admin {} created user {}", admin.getId(), user.getId());
 
             historyRepository.save(
                 new UserStatusHistory(user, admin, "ENABLED")
@@ -107,33 +116,41 @@ public class AdminController {
             model.addAttribute("success", "User created successfully");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            model.addAttribute("error", e.getMessage());
+            SECURITY_LOG.error("Create user failed by {} reason={}",
+                    authentication.getName(), e.getMessage());
+
+            model.addAttribute("error", "Unable to create user");
         }
 
         return "createUser";
     }
 
-    // Manage users page
+    // ============================================================
+    // Manage Users
+    // ============================================================
+
     @GetMapping("/manage-users")
     public String manageUsers(Model model) {
         model.addAttribute("users", userRepository.findByRole_NameNot("ADMIN"));
         return "manageUsers";
     }
 
-    // Disable user
+    // ============================================================
+    // Disable User
+    // ============================================================
+
     @PostMapping("/disable-user")
     public String disableUser(@RequestParam Long userId,
                               Authentication authentication) {
 
-        // Check if user has admin role
         if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            SECURITY_LOG.warn("Unauthorized disable attempt by {}", authentication.getName());
             return "redirect:/access-denied";
         }
 
         Long adminId = Long.valueOf(authentication.getName());
-            User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        User admin = userRepository.findById(adminId)
+            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -141,7 +158,7 @@ public class AdminController {
         user.setEnabled(false);
         userRepository.save(user);
 
-        SECURITY_LOG.warn("User {} disabled by {}", user.getId(), admin.getId());
+        SECURITY_LOG.warn("Admin {} disabled user {}", admin.getId(), user.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "DISABLED")
@@ -150,20 +167,23 @@ public class AdminController {
         return "redirect:/admin/manage-users";
     }
 
-    // Enable user (only if not inactive)
+    // ============================================================
+    // Enable User
+    // ============================================================
+
     @PostMapping("/enable-user")
     public String enableUser(@RequestParam Long userId,
                              Authentication authentication,
                              Model model) {
 
-        // Check if user has admin role
         if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            SECURITY_LOG.warn("Unauthorized enable attempt by {}", authentication.getName());
             return "redirect:/access-denied";
         }
 
-       Long adminId = Long.valueOf(authentication.getName());
-            User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        Long adminId = Long.valueOf(authentication.getName());
+        User admin = userRepository.findById(adminId)
+            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -176,7 +196,10 @@ public class AdminController {
         user.setEnabled(true);
         userRepository.save(user);
 
-        SECURITY_LOG.warn("User {} enabled by {}", user.getId(), admin.getId());
+        // Reset rate limiting state after recovery
+        rateLimiter.resetUser(user.getId());
+
+        SECURITY_LOG.warn("Admin {} enabled user {}", admin.getId(), user.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "ENABLED")
@@ -184,19 +207,23 @@ public class AdminController {
 
         return "redirect:/admin/manage-users";
     }
+
+    // ============================================================
+    // Inactivate User (permanent)
+    // ============================================================
+
     @PostMapping("/inactivate-user")
     public String inactivateUser(@RequestParam Long userId,
-                                Authentication authentication) {
+                                 Authentication authentication) {
 
-        // Check if user has admin role
         if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            SECURITY_LOG.warn("Unauthorized inactivate attempt by {}", authentication.getName());
             return "redirect:/access-denied";
         }
 
-       Long adminId = Long.valueOf(authentication.getName());
-            User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-
+        Long adminId = Long.valueOf(authentication.getName());
+        User admin = userRepository.findById(adminId)
+            .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
@@ -205,7 +232,7 @@ public class AdminController {
         user.setInactive(true);
         userRepository.save(user);
 
-        SECURITY_LOG.warn("User {} inactivated by {}", user.getId(), admin.getId());
+        SECURITY_LOG.warn("Admin {} inactivated user {}", admin.getId(), user.getId());
 
         historyRepository.save(
             new UserStatusHistory(user, admin, "INACTIVATED")
@@ -213,5 +240,4 @@ public class AdminController {
 
         return "redirect:/admin/manage-users";
     }
-
 }
