@@ -93,4 +93,7 @@ public class User {
         this.passwordChangedAt = passwordChangedAt;
     }
 
+    public boolean isAdmin() {
+        return role != null && "ADMIN".equalsIgnoreCase(role.getName());
+    }
 }

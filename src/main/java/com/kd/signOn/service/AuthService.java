@@ -28,46 +28,81 @@ public class AuthService {
         this.rateLimiter = rateLimiter;
     }
 
+    //============================================================
+    // AUTHENTICATION LOGIC
+    //============================================================
+
+    /**
+     * Authenticate a user
+     */
     public User authenticate(String email, String password, String clientIp) {
 
-        // validate input
-        ValidationService.validateEmail(email);
-        ValidationService.validatePassword(password);
+    // validate input
+    ValidationService.validateEmail(email);
+    ValidationService.validatePassword(password);
 
-        //rate limiting
-        if (rateLimiter.isBlocked(clientIp)) {
-            SECURITY_LOG.warn("Login failed for email={} ip={} reason=ip_rate_limiting",
-                    email, clientIp);
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-
-        if (optionalUser.isEmpty()) {
-            SECURITY_LOG.warn("Login failed for email={} ip={} reason=user_not_found",
-                    email, clientIp);
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        User user = optionalUser.get();
-
-
-        if (!user.isEnabled() || user.isInactive()) {
-            SECURITY_LOG.warn("Login failed for user={} ip={} reason=user_disabled",
-                    user.getId(), clientIp);
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            SECURITY_LOG.warn("Login failed for user={} ip={} reason=invalid_password",
-                    user.getId(), clientIp);
-            rateLimiter.recordAttempt(clientIp);
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        rateLimiter.recordAttempt(clientIp);
-        return user;
+    // IP rate limiting
+    if (rateLimiter.isIpBlocked(clientIp)) {
+        SECURITY_LOG.warn("Login failed for email={} ip={} reason=ip_rate_limiting",
+                email, clientIp);
+        throw new RuntimeException("Invalid credentials");
     }
+
+    Optional<User> optionalUser = userRepository.findByEmail(email);
+
+    if (optionalUser.isEmpty()) {
+        SECURITY_LOG.warn("Login failed for email={} ip={} reason=user_not_found",
+                email, clientIp);
+        rateLimiter.recordIpAttempt(clientIp);
+        throw new RuntimeException("Invalid credentials");
+    }
+
+    User user = optionalUser.get();
+
+    // Persistent disable
+    if (!user.isEnabled() || user.isInactive()) {
+        SECURITY_LOG.warn("Login failed for user={} ip={} reason=user_disabled",
+                user.getId(), clientIp);
+        rateLimiter.recordIpAttempt(clientIp);
+        throw new RuntimeException("Invalid credentials");
+    }
+
+    // Admin cooldown
+    if (user.isAdmin() && rateLimiter.isAdminCoolingDown(user.getId())) {
+        rateLimiter.extendAdminCooldown(user.getId());
+        SECURITY_LOG.warn("Login failed for user={} ip={} reason=admin_cooldown",
+                user.getId(), clientIp);
+        rateLimiter.recordIpAttempt(clientIp);
+        throw new RuntimeException("Invalid credentials");
+    }
+
+    // Password check
+    if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+
+        boolean shouldDisable =
+                rateLimiter.recordUserFailure(user.getId(), user.isAdmin());
+
+        if (shouldDisable && !user.isAdmin()) {
+            user.setEnabled(false);
+            userRepository.save(user);
+        }
+
+        SECURITY_LOG.warn("Login failed for user={} ip={} reason=invalid_password",
+                user.getId(), clientIp);
+
+        rateLimiter.recordIpAttempt(clientIp);
+        throw new RuntimeException("Invalid credentials");
+    }
+
+    rateLimiter.recordIpAttempt(clientIp);
+    rateLimiter.recordUserSuccess(user.getId());
+
+    return user;
+}
+
+    /**
+     * Change a user's password
+     */
     public void changePassword(String newPassword) {
 
         ValidationService.validatePassword(newPassword);
