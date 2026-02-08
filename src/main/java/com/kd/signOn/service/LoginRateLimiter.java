@@ -13,7 +13,7 @@ public class LoginRateLimiter {
 
     private static final int MAX_ATTEMPTS = 10;
     private static final long WINDOW_MS = 15 * 60 * 1000; // 15 mins
-\
+
     private static final int USER_MAX_FAILURES = 3;
     private static final long USER_WINDOW_MS = 5 * 60 * 1000;
 
