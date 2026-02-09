@@ -83,9 +83,12 @@ public class DataLoader {
                         }
                     }
 
-                ValidationService.validateName(name);
-                ValidationService.validateEmail(email);
-                ValidationService.validatePassword(password);
+                try {
+                    ValidationService.validatePassword(password);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Password validation failed: " + e.getMessage());
+                    return;
+                }
 
                 User admin = new User();
                 admin.setName(name);

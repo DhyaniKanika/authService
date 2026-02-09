@@ -6,7 +6,8 @@ public class ValidationService {
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@kd\\.com$";
 
     // allow strong but safe passwords
-    private static final String PASSWORD_REGEX = "^[A-Za-z0-9!@#$%^&*()_+=-]{8,64}$";
+private static final String PASSWORD_REGEX =
+  "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,64}$";
 
     public static void validateEmail(String email) {
         if (email == null || email.isBlank()) {
@@ -24,7 +25,7 @@ public class ValidationService {
         }
 
         if (!password.matches(PASSWORD_REGEX)) {
-            throw new IllegalArgumentException("Password must be at least 8 characters and use only letters, numbers, and these symbols: ! @ # $ % ^ & * ( ) _ + = -");
+            throw new IllegalArgumentException("Password must be at least 8 characters with one lower case letter, one upper case letter, one number, and use only letters, numbers, and these symbols: ! @ # $ % ^ & * ( ) _ + = -");
         }
     }
 
