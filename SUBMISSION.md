@@ -1,4 +1,3 @@
-
 ## 1. Scenario & Operating Assumptions
 
 This system represents an **internal organisational portal login**.
@@ -25,231 +24,18 @@ In an internal portal context, users don't self-register. Instead, accounts are 
 
 **Key Security Implementations:**
 - Pre-authorized account model (admin-provisioned users, no self-registration)
-- Mandatory password change on first login (enforced via servlet filter)
+- Mandatory password change on first login (enforced via servlet filter, see § 4.3)
 - Multi-layer rate limiting (IP-based + user-based)
-- Differentiated protection for admin vs. regular users (cooldown vs. lockout)
-- Secure session management with industry-standard cookie flags
+- Differentiated protection for admin vs. regular users (see § 4.7 for rationale)
+- Secure session management with industry-standard cookie flags (see § 3, Layer 5)
 - Comprehensive security headers (CSP, HSTS, X-Frame-Options)
 - TLS 1.2/1.3 enforcement with strong cipher suites
-- Dedicated security audit logging with daily rotation for SIEM integration
+- Dedicated security audit logging with daily rotation for SIEM integration (see § 3, Layer 7)
 - Generic error messages to prevent information disclosure
 - Account lifecycle management (enable/disable/inactivate)
 - Fixed domain validation (email must be @kd.com for internal portal)
 
----
-
-## 3. User & Operational Journeys
-
-Beyond static controls, security must be understood in motion.
-
-The following journeys illustrate how authentication, enforcement,
-recovery, and administration behave in realistic scenarios.
-
-These flows demonstrate how defensive mechanisms interact while
-preserving operational continuity.
-
----
-
-### 1. Administrative Bootstrap
-
-Initial trusted entry into the system.
-
-![Admin Bootstrap](./diagrams/adminBootstrap.png)
-#### Security Features
-- Password masking on console input
-- Confirmation required
-- Complexity validation
-
-**Design Note**
-
-The bootstrap administrator is a break-glass identity.
-It exists to provision real administrators and should not be used for daily operations.
-
-### 2. User Creation & Provisioning
-
-How new identities enter the system under administrative control.
-
-![User Creation](./diagrams/userCreation.png)
-#### Security Features
-- Admin authentication required
-- Email domain restriction
-- Server-side password validation
-- Users flagged for mandatory password change
-- Role assignment restricted
-
-
-
-**Real-World Parallel**
-
-HR submits onboarding → IT provisions account → temporary credential → forced rotation.
-
----
-
-### 3. First Login Experience
-
-Mandatory hygiene enforcement for newly created users.
-
-![First Access](./diagrams/userFirstAccess.png)
-
-#### Security Features
-- Session allowed but restricted
-- Redirect to password change
-- Other routes blocked
-
-**Security Implementation (PasswordChangeRequiredFilter):**
-```java
-// Filter checks EVERY request
-if (user.isPasswordChangeRequired()) {
-    // Only these paths allowed:
-    // - /change-password
-    // - /logout  
-    // - /login
-    // - /css/** (styling)
-    
-    // Everything else → Redirect to /change-password
-}
-```
-**Design Note**
-
-This prevents temporary or intercepted credentials from being used
-to access the system beyond initial setup.
-
----
-
-### 4. Standard Login Flow
-
-Normal authentication path including layered protections.
-
-![Full Login](./diagrams/fullLogin.png)
-
-#### Security Features
-- Uniform failure response (no username enumeration)
-- Parallel tracking of IP reputation and account abuse
-- BCrypt password verification
-- Session ID rotation after authentication
-- Post-authentication policy checks (e.g., forced password change)
-- Successful login resets abuse counters
-- Security events logged for traceability
-
-**Design Note**
-
-The goal is not merely to verify a password.
-
-The goal is to decide whether this request should be trusted right now.
-
-Even correct credentials are evaluated in context:
-
-- Has this IP been abusive?
-- Is the account in a safe state?
-- Is additional hygiene required?
-- Are we protecting an operational role?
-
-By layering checks, the system avoids treating authentication as binary.
-Access is granted only when identity, behaviour, and lifecycle expectations align..
-
-
----
-
-### 5. IP Rate Limiting Scenario
-
-This flow activates when repeated login attemps originate from the same source.
-The intention is to slow automated abuse without permanently harming availability.
-
-![IP Rate Limit](./diagrams/ipRateLimit.png)
-
-#### Security Features
-- Login tracking per IP address
-- Threshold-based temporary block
-- Automatic expiry of penalties 
-- Counters cleared after timeout
-- Security logging for visibility
-
-**Design Note**
-
-Rate limiting is designed to create friction for attackers, not outages for users.
-
-Permanent lockouts based purely on network origin can be dangerous,
-especially in corporate environments where many users may share NAT,
-VPN exits, or proxy infrastructure.
-
-For this reason, the block is temporary and self-healing.
-
-At the same time, IP reputation becomes part of the overall trust signal
-evaluated during authentication.
-
-This allows the system to respond to abuse while remaining operational.
----
-
-### 6. Standard User Lockout
-
-This scenario represents sustained or suspicious authentication failure
-associated with a specific identity.
-
-![User Lockout](./diagrams/userLocked.png)
-
-#### Security Features
-- Account transitions to a disabled state
-- Authentication attempts are rejected even with correct credentials
-- Administrative intervention required for recovery
-- Status changes are recorded for audit and traceability
-
-**Design Note**
-
-At this stage the system assumes elevated risk.
-
-While the root cause may simply be user error,
-it may also indicate credential abuse.
-Automatically restoring access would favour an attacker
-who can simply wait out the restriction.
-
-For this reason, recovery requires an administrator.
-
-This allows identity to be validated through organisational processes
-such as internal communication or managerial confirmation.
-
-In a larger deployment, an additional safety valve could exist:
-a long-duration automatic unlock (e.g., after 24 hours),
-with administrators providing a faster recovery path when necessary.
-
-However, for this implementation, priority was given to
-controlled, accountable restoration of trust.
-
----
-
-### 7. Administrative Cooldown Protection
-
-This scenario activates when repeated failures occur against a privileged operator.
-
-![Admin Cooldown](./diagrams/adminLocked.png)
-
-#### Security Features
-- Temporary restriction on authentication attempts
-- Automatic recovery after cooldown window
-- Additional attempts extend the restriction
-- Events logged for visibility
-
-**Design Note**
-
-Administrative accounts are different from standard users.
-
-If a normal user is unavailable, the organisation can continue operating.
-If administrators are unavailable, recovery, onboarding, and incident response
-may halt.
-
-For this reason, permanently disabling an administrator based solely on
-authentication failures introduces a serious operational risk.
-An attacker could intentionally trigger lockouts to deny service.
-
-Instead, the system applies a cooling-off period.
-
-This slows brute force activity while ensuring administrators
-regain access without requiring intervention from another operator.
-
-Security is preserved, but availability is not sacrificed.
-
----
-
-### 8. Complete Lifecycle Overview
+### Complete Lifecycle Overview
 
 Comprehensive view of state transitions and recovery paths.
 
@@ -257,7 +43,7 @@ Comprehensive view of state transitions and recovery paths.
 
 ---
 
-## Defense in Depth
+## 3. Defense in Depth
 
 Authentication risk is not controlled by a single mechanism.
 Instead, multiple independent safeguards operate together so that
@@ -300,10 +86,9 @@ TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
 Even valid-looking requests can be malicious if behaviour is abnormal.
 
 #### Security Measures
-- IP-based rate limiting
-- Temporary blocks for abusive sources
+- IP-based rate limiting with temporary blocks (see § 4.5 for rationale)
+- Automatic expiry prevents operational impact in shared network environments
 - Authentication attempts tied to source address
-- Automatic expiry of penalties
 
 The goal is to slow automation without causing unnecessary
 availability impact in shared enterprise network environments.
@@ -320,7 +105,7 @@ The system evaluates whether the account itself is in a trustworthy state.
 
 #### Security Measures
 - Lockout after repeated failure
-- Administrative cooldown model
+- Administrative cooldown model (see § 4.7)
 - Mandatory password change flags
 - Explicit lifecycle states
 - Manual recovery pathways
@@ -344,7 +129,7 @@ Input handling and responses must not help an attacker.
 #### Security Measures
 - Strict validation rules
 - Password policy enforcement server-side
-- Uniform error messages
+- Uniform error messages prevent user enumeration
 - CSRF protection on state changes
 - Password reuse prevention
 
@@ -397,6 +182,13 @@ Client execution paths are restricted to reduce injection opportunities.
 By minimising what the browser is allowed to execute,
 entire classes of XSS-style attacks become significantly harder.
 
+**CSP Directives:**
+- `default-src 'self'` - Only load resources from same origin
+- `script-src 'self'` - Block inline scripts and external JavaScript
+- `style-src 'self'` - Block inline styles and external CSS
+- `img-src 'self'` - Only images from same origin
+- `frame-ancestors 'self'` - Prevent clickjacking (same as X-Frame-Options)
+
 
 ```java
 .headers(headers -> headers
@@ -434,4 +226,401 @@ private static final Logger SECURITY_LOG =
 ```
 
 ---
+---
 
+## 4. User & Operational Journeys
+
+Beyond static controls, security must be understood in motion.
+
+The following journeys illustrate how authentication, enforcement,
+recovery, and administration behave in realistic scenarios.
+
+These flows demonstrate how defensive mechanisms interact while
+preserving operational continuity.
+
+---
+
+### 4.1 Administrative Bootstrap
+
+Initial trusted entry into the system.
+
+![Admin Bootstrap](./diagrams/adminBootstrap.png)
+#### Security Features
+- Password masking on console input
+- Confirmation required
+- Complexity validation
+
+**Design Note**
+
+The bootstrap administrator is a break-glass identity.
+It exists to provision real administrators and should not be used for daily operations.
+
+### 4.2 User Creation & Provisioning
+
+How new identities enter the system under administrative control.
+
+![User Creation](./diagrams/userCreation.png)
+#### Security Features
+- Admin authentication required
+- Email domain restriction
+- Server-side password validation
+- Users flagged for mandatory password change
+- Role assignment restricted
+
+
+
+**Real-World Parallel**
+
+HR submits onboarding → IT provisions account → temporary credential → forced rotation.
+
+---
+
+### 4.3 First Login Experience
+
+Mandatory hygiene enforcement for newly created users.
+
+![First Access](./diagrams/userFirstAccess.png)
+
+#### Security Features
+- Session allowed but restricted
+- Redirect to password change
+- Other routes blocked
+
+**Security Implementation (PasswordChangeRequiredFilter):**
+```java
+// Filter checks EVERY request
+if (user.isPasswordChangeRequired()) {
+    // Only these paths allowed:
+    // - /change-password
+    // - /logout  
+    // - /login
+    // - /css/** (styling)
+    
+    // Everything else → Redirect to /change-password
+}
+```
+**Design Note**
+
+This prevents temporary or intercepted credentials from being used
+to access the system beyond initial setup.
+
+---
+
+### 4.4 Standard Login Flow
+
+Normal authentication path including layered protections.
+
+![Full Login](./diagrams/fullLogin.png)
+
+#### Security Features
+- **Uniform failure response**: All authentication failures return "Invalid credentials" (prevents username enumeration, see § 5)
+- Parallel tracking of IP reputation and account abuse
+- BCrypt password verification
+- Session ID rotation after authentication (prevents fixation, see § 3, Layer 5)
+- Post-authentication policy checks (e.g., forced password change)
+- Successful login resets abuse counters
+- Security events logged for traceability
+
+**Design Note**
+
+The goal is not merely to verify a password.
+
+The goal is to decide whether this request should be trusted right now.
+
+Even correct credentials are evaluated in context:
+
+- Has this IP been abusive?
+- Is the account in a safe state?
+- Is additional hygiene required?
+- Are we protecting an operational role?
+
+By layering checks, the system avoids treating authentication as binary.
+Access is granted only when identity, behaviour, and lifecycle expectations align.
+
+
+---
+
+### 4.5 IP Rate Limiting Scenario
+
+This flow activates when repeated login attempts originate from the same source.
+The intention is to slow automated abuse without permanently harming availability.
+
+![IP Rate Limit](./diagrams/ipRateLimit.png)
+
+#### Security Features
+- Login tracking per IP address
+- Threshold-based temporary block
+- Automatic expiry of penalties 
+- Counters cleared after timeout
+- Security logging for visibility
+
+**Design Note**
+
+Rate limiting creates friction for attackers, not outages for users.
+
+Permanent lockouts based purely on network origin are dangerous in corporate 
+environments where users share NAT, VPN exits, or proxy infrastructure.
+
+The block is temporary and self-healing. IP reputation becomes part of the 
+overall trust signal without causing availability issues.
+
+---
+
+### 4.6 Standard User Lockout
+
+This scenario represents sustained or suspicious authentication failure
+associated with a specific identity.
+
+![User Lockout](./diagrams/userLocked.png)
+
+#### Security Features
+- Account transitions to a disabled state
+- Authentication attempts are rejected even with correct credentials
+- Administrative intervention required for recovery
+- Status changes are recorded for audit and traceability
+
+**Design Note**
+
+At this stage the system assumes elevated risk.
+
+While the root cause may simply be user error, it may also indicate credential abuse.
+Automatically restoring access would favour an attacker who can simply wait out the restriction.
+
+For this reason, recovery requires an administrator. This allows identity to be validated 
+through organizational processes such as internal communication or managerial confirmation.
+
+For the distinction between user lockout and admin cooldown, see § 4.7.
+
+---
+
+### 4.7 Administrative Cooldown Protection
+
+This scenario activates when repeated failures occur against a privileged operator.
+
+![Admin Cooldown](./diagrams/adminLocked.png)
+
+#### Security Features
+- Temporary restriction on authentication attempts
+- Automatic recovery after cooldown window
+- Additional attempts extend the restriction
+- Events logged for visibility
+
+**Design Note**
+
+Administrative accounts are different from standard users.
+
+If a normal user is unavailable, the organization can continue operating.
+If administrators are unavailable, recovery, onboarding, and incident response may halt.
+
+Permanently disabling administrators based solely on authentication failures 
+introduces operational risk. An attacker could intentionally trigger lockouts 
+to deny service.
+
+Instead, the system applies a cooling-off period. This slows brute force 
+while ensuring administrators regain access without requiring intervention 
+from another operator.
+
+Security is preserved, but availability is not sacrificed.
+
+---
+
+## 5. Threat Scenarios Considered
+
+Security controls were selected based on realistic abuse patterns
+commonly observed in enterprise authentication systems.
+
+The goal is not only prevention, but also visibility and controlled recovery.
+
+---
+
+### Credential Stuffing / Password Guessing
+
+**Risk**
+
+An attacker repeatedly attempts different passwords across accounts,
+hoping for credential reuse or weak combinations.
+
+**Mitigation**
+
+- IP-based rate limiting slows automation  
+- Repeated failures transition accounts into protective states  
+- Successful authentication resets counters  
+- Password policy reduces guessability  
+
+**Residual Risk**
+
+Distributed infrastructure can weaken the effectiveness of
+per-IP protections.
+
+In a real deployment, surrounding layers such as VPN gateways,
+intrusion detection systems, and SIEM-driven monitoring would
+identify abnormal authentication volumes or geographic anomalies.
+
+The application produces structured security events specifically
+to support this integration.
+
+---
+
+### Username Enumeration
+
+**Risk**
+
+An attacker attempts to determine which identities exist,
+reducing the search space for later attacks.
+
+**Mitigation**
+
+- Uniform authentication responses  
+- No distinction between "user not found" and "wrong password"
+
+**Residual Risk**
+
+Timing differences may still provide minor signals.
+Further response normalisation or artificial delay could be introduced if required.
+
+---
+
+### Administrator Lockout as Denial of Service
+
+**Risk**
+
+An attacker intentionally triggers thresholds to disable privileged staff,
+impacting business continuity.
+
+**Mitigation**
+
+- Administrators enter temporary cooldown instead of permanent disable (see § 4.7)
+- Automatic recovery ensures operational availability  
+
+**Residual Risk**
+
+High-volume sustained abuse may still slow access.
+External monitoring and SOC awareness become important at this stage.
+
+---
+
+### Bypass of Mandatory Password Change
+
+**Risk**
+
+A user attempts to access protected resources before completing
+initial hygiene requirements.
+
+**Mitigation**
+
+- Post-authentication filter restricts available paths (see § 4.3)
+- Only password change and logout are permitted
+
+**Residual Risk**
+
+Minimal, assuming correct policy configuration.
+
+---
+
+### CSRF Against Sensitive Actions
+
+**Risk**
+
+A victim's authenticated browser is manipulated into performing
+unintended state changes.
+
+**Mitigation**
+
+- CSRF protection enabled  
+- Valid tokens required for submission  
+
+**Residual Risk**
+
+If the user's session itself is compromised,
+this layer cannot provide protection.
+
+---
+
+### Session Fixation / Hijacking
+
+**Risk**
+
+An attacker reuses or predicts a valid session identifier.
+
+**Mitigation**
+
+- Session ID regeneration after login (see § 3, Layer 5)
+- Secure cookie attributes  
+- Explicit invalidation on logout and password change  
+
+**Residual Risk**
+
+Endpoint or browser compromise remains outside application control.
+
+---
+
+## 6. Operational Detection & Response Context
+
+While the application provides preventative mechanisms,
+enterprise environments typically surround authentication services
+with additional monitoring capabilities.
+
+Examples include:
+
+- VPN access controls  
+- IDS / IPS platforms  
+- Centralized SIEM correlation  
+- Behavioral analytics  
+
+The structured logging format (§ 3, Layer 7) enables seamless integration
+with these pipelines for alerting, trend analysis, and incident investigation.
+
+**In summary: The application resists attacks; the organization detects and responds**.
+
+---
+
+## 7. Technology Choices & AI-Assisted Development
+
+### 7.1 Why Spring Boot & Java?
+
+**Professional Experience**
+
+I chose Spring Boot 3.x with Java 17 because I have developed in Java professionally. 
+This allowed me to focus on implementing security controls rather than learning 
+a new framework within the limited timeframe.
+
+**Technical Foundation**
+
+- Generated initial project structure using [Spring Initializr](https://start.spring.io/)
+- Spring Security provides mature authentication and authorization primitives
+- Built-in support for session management, CSRF protection, and security headers
+- JPA/Hibernate for clean data access layer
+- Embedded Tomcat simplifies TLS configuration and deployment
+
+### 7.2 AI Usage & Development Approach
+
+**Tools Used**
+- **Claude (Anthropic)** - Architecture guidance and code generation
+- **GPT-4 (OpenAI)** - Code generation and pattern suggestions  
+- **GitHub Copilot (VS Code)** - Inline code completion and comment generation
+
+**How AI Was Used**
+
+**Skeleton Code Generation**
+- Used Claude and GPT-4 to generate base project files
+- Created entity models, repository interfaces, and controller templates
+- Generated initial configuration files (application.properties, logback-spring.xml)
+
+**Development Assistance**
+- Copilot helped with:
+  - Auto-completing code as I typed
+  - Generating JavaDoc comments
+  - Suggesting Spring Security configuration patterns
+  - Writing boilerplate (getters, setters, constructors)
+
+**What I Implemented Manually**
+
+The security nuances were my own decisions:
+- Rate limiting logic
+- Admin cooldown instead of lockout (DoS prevention)
+- Password change enforcement on first login filter logic
+- Generic error messages ("Invalid credentials" for all failures)
+- Security audit logs
+- etc...
+
+---
