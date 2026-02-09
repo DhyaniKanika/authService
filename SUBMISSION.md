@@ -24,13 +24,13 @@ In an internal portal context, users don't self-register. Instead, accounts are 
 
 **Key Security Implementations:**
 - Pre-authorized account model (admin-provisioned users, no self-registration)
-- Mandatory password change on first login (enforced via servlet filter, see § 4.3)
+- Mandatory password change on first login (enforced via servlet filter, see 4.3)
 - Multi-layer rate limiting (IP-based + user-based)
-- Differentiated protection for admin vs. regular users (see § 4.7 for rationale)
-- Secure session management with industry-standard cookie flags (see § 3, Layer 5)
+- Differentiated protection for admin vs. regular users (see 4.7 for rationale)
+- Secure session management with industry-standard cookie flags (see 3, Layer 5)
 - Comprehensive security headers (CSP, HSTS, X-Frame-Options)
 - TLS 1.2/1.3 enforcement with strong cipher suites
-- Dedicated security audit logging with daily rotation for SIEM integration (see § 3, Layer 7)
+- Dedicated security audit logging with daily rotation for SIEM integration (see 3, Layer 7)
 - Generic error messages to prevent information disclosure
 - Account lifecycle management (enable/disable/inactivate)
 - Fixed domain validation (email must be @kd.com for internal portal)
@@ -52,7 +52,6 @@ failure or bypass of one layer does not expose the system.
 The design intentionally distributes trust decisions across transport,
 network behaviour, identity state, application logic, and session handling.
 
----
 
 ### Layer 1 – Transport Trust
 
@@ -78,9 +77,6 @@ TLS_AES_128_GCM_SHA256,\
 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,\
 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
 ```
-
----
-
 ### Layer 2 – Network Behaviour
 
 Even valid-looking requests can be malicious if behaviour is abnormal.
@@ -96,8 +92,6 @@ availability impact in shared enterprise network environments.
 **Relevant Implementation**
 - `service/LoginRateLimiter.java`
 - `service/AuthService.java`
-
----
 
 ### Layer 3 – Identity Protection
 
@@ -120,8 +114,6 @@ not only credentials.
 - `repository/UserRepository.java`
 - `model/User.java`
 
----
-
 ### Layer 4 – Application Enforcement
 
 Input handling and responses must not help an attacker.
@@ -140,7 +132,6 @@ private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@kd\\.com$";
 private static final String PASSWORD_REGEX =
   "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,64}$";
 ```
----
 
 ### Layer 5 – Session Integrity
 
@@ -167,8 +158,6 @@ server.servlet.session.cookie.same-site=strict
     .deleteCookies("JSESSIONID")
 )
 ```
-
----
 
 ### Layer 6 – Browser Containment
 
@@ -200,8 +189,6 @@ entire classes of XSS-style attacks become significantly harder.
 )
 ```
 
----
-
 ### Layer 7 – Observability & Accountability
 
 Security must be measurable.
@@ -224,8 +211,6 @@ Visibility turns defensive controls into actionable intelligence.
 private static final Logger SECURITY_LOG =
         LoggerFactory.getLogger("SECURITY_AUDIT");
 ```
-
----
 ---
 
 ## 4. User & Operational Journeys
@@ -237,8 +222,6 @@ recovery, and administration behave in realistic scenarios.
 
 These flows demonstrate how defensive mechanisms interact while
 preserving operational continuity.
-
----
 
 ### 4.1 Administrative Bootstrap
 
@@ -268,12 +251,10 @@ How new identities enter the system under administrative control.
 - Role assignment restricted
 
 
-
 **Real-World Parallel**
 
 HR submits onboarding → IT provisions account → temporary credential → forced rotation.
 
----
 
 ### 4.3 First Login Experience
 
@@ -304,8 +285,6 @@ if (user.isPasswordChangeRequired()) {
 This prevents temporary or intercepted credentials from being used
 to access the system beyond initial setup.
 
----
-
 ### 4.4 Standard Login Flow
 
 Normal authentication path including layered protections.
@@ -313,10 +292,10 @@ Normal authentication path including layered protections.
 ![Full Login](./diagrams/fullLogin.png)
 
 #### Security Features
-- **Uniform failure response**: All authentication failures return "Invalid credentials" (prevents username enumeration, see § 5)
+- **Uniform failure response**: All authentication failures return "Invalid credentials" (prevents username enumeration, see 5)
 - Parallel tracking of IP reputation and account abuse
 - BCrypt password verification
-- Session ID rotation after authentication (prevents fixation, see § 3, Layer 5)
+- Session ID rotation after authentication (prevents fixation, see 3, Layer 5)
 - Post-authentication policy checks (e.g., forced password change)
 - Successful login resets abuse counters
 - Security events logged for traceability
@@ -336,9 +315,6 @@ Even correct credentials are evaluated in context:
 
 By layering checks, the system avoids treating authentication as binary.
 Access is granted only when identity, behaviour, and lifecycle expectations align.
-
-
----
 
 ### 4.5 IP Rate Limiting Scenario
 
@@ -364,7 +340,6 @@ environments where users share NAT, VPN exits, or proxy infrastructure.
 The block is temporary and self-healing. IP reputation becomes part of the 
 overall trust signal without causing availability issues.
 
----
 
 ### 4.6 Standard User Lockout
 
@@ -391,7 +366,6 @@ through organizational processes such as internal communication or managerial co
 
 For the distinction between user lockout and admin cooldown, see § 4.7.
 
----
 
 ### 4.7 Administrative Cooldown Protection
 
@@ -431,7 +405,6 @@ commonly observed in enterprise authentication systems.
 
 The goal is not only prevention, but also visibility and controlled recovery.
 
----
 
 ### Credential Stuffing / Password Guessing
 
@@ -459,8 +432,6 @@ identify abnormal authentication volumes or geographic anomalies.
 The application produces structured security events specifically
 to support this integration.
 
----
-
 ### Username Enumeration
 
 **Risk**
@@ -478,7 +449,6 @@ reducing the search space for later attacks.
 Timing differences may still provide minor signals.
 Further response normalisation or artificial delay could be introduced if required.
 
----
 
 ### Administrator Lockout as Denial of Service
 
@@ -497,7 +467,6 @@ impacting business continuity.
 High-volume sustained abuse may still slow access.
 External monitoring and SOC awareness become important at this stage.
 
----
 
 ### Bypass of Mandatory Password Change
 
@@ -515,7 +484,6 @@ initial hygiene requirements.
 
 Minimal, assuming correct policy configuration.
 
----
 
 ### CSRF Against Sensitive Actions
 
@@ -534,7 +502,6 @@ unintended state changes.
 If the user's session itself is compromised,
 this layer cannot provide protection.
 
----
 
 ### Session Fixation / Hijacking
 
@@ -544,7 +511,7 @@ An attacker reuses or predicts a valid session identifier.
 
 **Mitigation**
 
-- Session ID regeneration after login (see § 3, Layer 5)
+- Session ID regeneration after login (see 3, Layer 5)
 - Secure cookie attributes  
 - Explicit invalidation on logout and password change  
 
@@ -616,11 +583,13 @@ a new framework within the limited timeframe.
 **What I Implemented Manually**
 
 The security nuances were my own decisions:
+- The over all architecture and system design
 - Rate limiting logic
 - Admin cooldown instead of lockout (DoS prevention)
 - Password change enforcement on first login filter logic
 - Generic error messages ("Invalid credentials" for all failures)
 - Security audit logs
-- etc...
+- Role Based Access Control and it's implementation
+- implementing Content Securit Policy
 
 ---
