@@ -17,7 +17,7 @@ function attachPasswordValidation(formId, passId, confirmId, errorId) {
 
         if (!Validation.isStrongPassword(pass)) {
             err.textContent =
-                "Password must be 8–64 characters and may include letters, numbers and !@#$%^&*()_+=-";
+                "Password must be 8–64 characters and must include one upper case letter, one lower case letter, one number, and one of these special character (!@#$%^&*()_+=-)";
             e.preventDefault();
         }
     });

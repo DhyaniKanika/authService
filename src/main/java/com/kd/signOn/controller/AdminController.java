@@ -80,6 +80,8 @@ public class AdminController {
             return "redirect:/access-denied";
         }
 
+        email = email.trim().toLowerCase();
+
         try {
             ValidationService.validateEmail(email);
             ValidationService.validatePassword(password);
