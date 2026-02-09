@@ -37,7 +37,6 @@ In an internal portal context, users don't self-register. Instead, accounts are 
 - Fixed domain validation (email must be @kd.com for internal portal)
 
 ---
----
 
 ## 3. User & Operational Journeys
 
@@ -283,6 +282,17 @@ Before credentials are evaluated, the communication channel must be protected.
 If transport integrity fails, every higher control becomes meaningless.
 This layer ensures credentials are never exposed in transit.
 
+```properties
+# Enforce modern TLS only
+server.ssl.enabled-protocols=TLSv1.2,TLSv1.3
+
+# Explicit cipher control
+server.ssl.ciphers=TLS_AES_256_GCM_SHA384,\
+TLS_AES_128_GCM_SHA256,\
+TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,\
+TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+```
+
 ---
 
 ### Layer 2 – Network Behaviour
@@ -297,6 +307,10 @@ Even valid-looking requests can be malicious if behaviour is abnormal.
 
 The goal is to slow automation without causing unnecessary
 availability impact in shared enterprise network environments.
+
+**Relevant Implementation**
+- `service/LoginRateLimiter.java`
+- `service/AuthService.java`
 
 ---
 
@@ -315,6 +329,12 @@ Trust in identity is dynamic.
 The system adapts based on behaviour and history,
 not only credentials.
 
+**Relevant Implementation**
+- `service/AuthService.java`
+- `service/PasswordChangeRequiredFilter.java`
+- `repository/UserRepository.java`
+- `model/User.java`
+
 ---
 
 ### Layer 4 – Application Enforcement
@@ -329,7 +349,12 @@ Input handling and responses must not help an attacker.
 - Password reuse prevention
 
 Attackers should gain as little information as possible from the interface.
+```java
+private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@kd\\.com$";
 
+private static final String PASSWORD_REGEX =
+  "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\\d!@#$%^&*()_+=-]{8,64}$";
+```
 ---
 
 ### Layer 5 – Session Integrity
@@ -345,6 +370,19 @@ Authentication success does not end risk.
 These measures prevent fixation, replay, and session theft
 from undermining otherwise strong authentication.
 
+```properties
+server.servlet.session.timeout=15m
+server.servlet.session.cookie.http-only=true
+server.servlet.session.cookie.secure=true
+server.servlet.session.cookie.same-site=strict
+```
+```java
+.logout(logout -> logout
+    .invalidateHttpSession(true)
+    .deleteCookies("JSESSIONID")
+)
+```
+
 ---
 
 ### Layer 6 – Browser Containment
@@ -358,6 +396,17 @@ Client execution paths are restricted to reduce injection opportunities.
 
 By minimising what the browser is allowed to execute,
 entire classes of XSS-style attacks become significantly harder.
+
+
+```java
+.headers(headers -> headers
+    .contentSecurityPolicy(csp -> csp
+        .policyDirectives(
+            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; frame-ancestors 'self';"
+        )
+    )
+)
+```
 
 ---
 
@@ -375,6 +424,14 @@ Well-structured logs allow rapid integration with monitoring,
 alerting, and forensic workflows.
 
 Visibility turns defensive controls into actionable intelligence.
+
+**Relevant Implementation**
+- `logback-spring.xml`
+
+```java
+private static final Logger SECURITY_LOG =
+        LoggerFactory.getLogger("SECURITY_AUDIT");
+```
 
 ---
 
