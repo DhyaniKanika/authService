@@ -32,10 +32,11 @@ The design prioritises:
 mvn clean package
 ```
 ### Run
+Windows
 ```bash
-  java -jar target/signOn-1.0.0.jar
+  mvnw spring-boot:run
 ```
-or 
+or Linux/macOs
 ```bash
   ./mvnw spring-boot:run
 ```
