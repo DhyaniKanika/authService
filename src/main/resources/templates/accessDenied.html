@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Access Denied</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Access Denied</h1>
+    <p>You do not have permission to access this page.</p>
+
+    <div class="actions">
+
+    <div th:if="${#authorization.expression('hasRole(''ADMIN'') or hasRole(''USER'')')}">
+        <a href="/landing">Go to Home</a>
+    </div>
+
+    <form action="/logout" method="post" >
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit" class="login-button subtle">Logout</button>
+    </form>
+
+</div>
+</div>
+
+</body>
+</html>

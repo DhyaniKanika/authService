@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="login-page">
+    <div class="login-container">
+        <h1 class="logo-text">Admin Panel</h1>
+
+        <div class="admin-actions">
+            <a href="/admin/create-user" class="login-button">Create User</a>
+            <a href="/admin/manage-users" class="login-button">Manage Users</a>
+            <a href="/account" class="login-button">My Account</a>
+        </div>
+
+        <div class="admin-footer">
+            <form action="/logout" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <button type="submit" class="login-button subtle">Logout</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

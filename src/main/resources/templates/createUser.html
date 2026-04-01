@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create User</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+<div class="login-page">
+  <div class="login-container">
+    <h1>Create User</h1>
+
+    <form action="/admin/create-user" method="post" id="createUserForm">
+
+        <!-- Name -->
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" name="name" id="name" required>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" name="email" id="email"
+                   placeholder="example@kd.com" required>
+            <small id="emailError" class="field-error"></small>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+
+        <!-- Confirm -->
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" required>
+            <small id="passwordError" class="field-error"></small>
+        </div>
+
+        <!-- Role -->
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select name="role" id="role">
+                <option value="USER">USER</option>
+            </select>
+        </div>
+
+        <!-- CSRF -->
+        <input type="hidden"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}" />
+
+        <button type="submit" class="login-button">Create</button>
+    </form>
+
+    <p class="error">[[${error}]]</p>
+    <p class="success">[[${success}]]</p>
+
+    <a href="/admin" class="link-secondary">Back</a>
+  </div>
+</div>
+<script src="/js/validation.js"></script>
+<script src="/js/forms.js"></script>
+<script src="/js/create-user.js"></script>
+
+</body>
+</html>

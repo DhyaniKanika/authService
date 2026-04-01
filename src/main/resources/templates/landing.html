@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="login-page">
+    <div class="login-container">
+
+        <!-- Greeting -->
+        <h1 class="logo-text">
+            Welcome
+        </h1>
+
+        <hr>
+
+        <!-- Main action -->
+        <a href="/account" class="login-button">My Account</a>
+
+        <br><br>
+
+        <!-- Logout -->
+        <form action="/logout" method="post" >
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit" class="login-button subtle">Logout</button>
+        </form>
+
+
+    </div>
+</div>
+
+</body>
+</html>

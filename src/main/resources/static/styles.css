@@ -1,0 +1,300 @@
+:root {
+    --template-blue: #00B7E3; 
+    --template-blue-hover: #0099C7; 
+    --primary-text-color: #333;
+    --secondary-text-color: #545454;
+    --light-background: #f0f4f7;
+    --white: #ffffff;
+    --border-color: #d8dee3;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--light-background);
+}
+
+.login-container {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+.logo-text {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: var(--template-blue);
+}
+
+.logo-text span {
+    color: var(--secondary-text-color);
+}
+
+.form-title {
+    color: var(--primary-text-color);
+    margin-bottom: 25px;
+    font-weight: 400;
+    font-size: 1.5rem;
+    text-align: left;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--secondary-text-color);
+    font-size: 0.9rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-group input:focus {
+    border-color: var(--template-blue);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--template-blue); 
+}
+
+.login-button {
+    width: 100%;
+    background-color: var(--template-blue);
+    color: var(--white);
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+.login-button:hover {
+    background-color: var(--template-blue-hover);
+}
+
+/* --- Footer Link --- */
+.forgot-password-link {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+.forgot-password-link a {
+    color: var(--template-blue);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-password-link a:hover {
+    text-decoration: underline;
+}
+
+
+/* =====================================================
+   Uniform form system
+===================================================== */
+
+#createUserForm {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: stretch;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--secondary-text-color);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.field-error {
+    color: #c0392b;
+    font-size: 0.8rem;
+    min-height: 16px;
+}
+
+.link-secondary {
+    display: block;
+    margin-top: 15px;
+    color: var(--secondary-text-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+/* =====================================================
+   Manage users table
+===================================================== */
+
+.wide {
+    max-width: 1000px;
+}
+
+/* remove thick borders */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    font-size: 0.95rem;
+}
+
+.user-table th {
+    background: var(--light-background);
+    padding: 12px;
+    border-bottom: 2px solid var(--border-color);
+    text-align: left;
+}
+
+.user-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* compact row height */
+.user-table tr {
+    height: 48px;
+}
+
+/* action column */
+.actions-col {
+    text-align: center;
+}
+
+/* actions */
+.table-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+/* small buttons */
+.small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    width: auto;
+}
+
+/* danger */
+.danger {
+    background: #c0392b;
+}
+
+/* bottom buttons */
+.page-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* subtle */
+.subtle {
+    background: #7f8c8d;
+}
+
+
+/* =====================================================
+   Admin dashboard layout
+===================================================== */
+
+.admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* push logout slightly away */
+.admin-footer {
+    margin-top: 20px;
+}
+
+/* subtle style */
+.subtle {
+    background: #7f8c8d;
+}
+
+/* =========================================
+   Vertical form alignment
+========================================= */
+
+.form-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    box-sizing: border-box;
+}
+/* simple field alignment */
+.field {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    margin-bottom: 12px;
+}
+
+.field input {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+}
